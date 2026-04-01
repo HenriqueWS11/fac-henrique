@@ -1,0 +1,650 @@
+    1  sudo ls
+    2  cd ..
+    3  ls
+    4  su sirius
+    5  sudo ls
+    6  exit
+    7  sudo ls
+    8  exit
+    9  sudo ls
+   10  exit
+   11  sudo ls
+   12  groups
+   13  groups | grep sudo
+   14  sudo ls
+   15  more /etc/
+   16  cd et
+   17  cd /etc/
+   18  cd sudoers.d/
+   19  ls
+   20  cd ..
+   21  more sudoers
+   22  su sirius
+   23  exit
+   24  htop
+   25  cd /opt
+   26  ls
+   27  cd ..
+   28  ls
+   29  cd opt
+   30  ls
+   31  rm -r mamba_files
+   32  ls -la
+   33  man ls
+   34  ls -lah
+   35  sudo rm -r mamba_files
+   36  ls
+   37  cd ..
+   38  ls
+   39  cd home
+   40  ls
+   41  henrique.silvestre/
+   42  cd henrique.silvestre/
+   43  ls
+   44  mkdir repos
+   45  cd repos
+   46  git clone git@github.com:/lnls-sirius/scripts.git
+   47  ssh-keygen
+   48  git config
+   49  git config list
+   50  git config --list
+   51  git config --global user.name HenriqueWS11
+   52  git config -l
+   53  git config --global user.email henrique.silvestre@lnls.br
+   54  git clone git@github.com:/lnls-sirius/scripts.git
+   55  git clone git@github.com:lnls-sirius/scripts.git
+   56  git remote -v
+   57  cd ~/.ssh
+   58  ls
+   59  cat id_rsa.pub
+   60  cd -
+   61  git clone git@github.com:lnls-sirius/scripts.git
+   62  cd scripts
+   63  code -n ./
+   64  cd bin
+   65  ls -l
+   66  ./sirius-script-mamba-env-create.bash --help
+   67  ./sirius-script-mamba-env-create.bash -c -d --no-ioc --no-ima --no-colleff
+   68  ./sirius-script-mamba-env-create.bash -c -d --no-ioc --no-ima --no-colleff -f /home/henrique.silvestre/repos
+   69  mamba activate sirius
+   70  history
+   71  history > ~/history0502.txt
+   72  exit
+   73  cd ../
+   74  ls
+   75  cd Downloads
+   76  cd home
+   77  ls
+   78  cd ~;
+   79  cd ~/
+   80  ls
+   81  cd Downloads/
+   82  ls
+   83  cd ./
+   84  cd ../
+   85  ls
+   86  cat history0502.txt
+   87  ls
+   88  cd repos
+   89  ls
+   90  cd tutorials
+   91  ls
+   92  mamba activate sirius
+   93  code -n ./
+   94  mamba deactivate
+   95  cd /
+   96  ls
+   97  cd -
+   98  ls
+   99  ls -l
+  100  exit
+  101  ls
+  102  cat history0502.txt
+  103  ls
+  104  ls -l
+  105  ls
+  106  cd ../
+  107  ls
+  108  cd mnt
+  109  ls
+  110  cd ../
+  111  cd dev
+  112  ls
+  113  cd ..
+  114  cd ~
+  115  cd /
+  116  cd ~
+  117  cd --help
+  118  cd repos
+  119  ls
+  120  cd scripts
+  121  ls
+  122  cd -
+  123  cd -/
+  124  ls
+  125  cd apsuite/
+  126  cd -
+  127  cd /apsuite
+  128  cd lnls
+  129  ls
+  130  cd ~
+  131  ls
+  132  cd scripts
+  133  ls
+  134  ls ~
+  135  cd ~/repos
+  136  ls
+  137  cd scripts
+  138  ls
+  139  cd bin
+  140  ls
+  141  code --help
+  142  code -n .
+  143  .
+  144  ./
+  145  pwd
+  146  pwd --help
+  147  pwd .
+  148  pwd -/
+  149  pwd .
+  150  ls
+  151  code -n ./
+  152  cd ~/
+  153  ls
+  154  cd /
+  155  ls
+  156  cd opt
+  157  ls
+  158  cd mamba_files
+  159  ls
+  160  cd mamba
+  161  ls
+  162  code -n
+  163  cd ~/
+  164  ls
+  165  cd repos/tutorials/
+  166  mamba activate sirius
+  167  ls
+  168  cd notebooks/
+  169  ls
+  170  code -n ./
+  171  history
+  172  ls ~/
+  173  cat ~/history0502.txt 
+  174  cd ~/
+  175  git status
+  176  git config --help
+  177  exit
+  178  ls
+  179  cat history0502.txt 
+  180  history
+  181  ls
+  182  ls -l
+  183  cat history0502.txt 
+  184  exit
+  185  ls
+  186  cd repos
+  187  ls
+  188  cd pyaccel
+  189  ls
+  190  cd examples/
+  191  ls
+  192  git status
+  193  git branch --all
+  194  git fetch --all --prune
+  195  git merge
+  196  git status
+  197  exit
+  198  tex
+  199  exit
+  200  cd repos
+  201  ls
+  202  cd tutorials/
+  203  ls
+  204  cd notebooks/
+  205  code -n ./
+  206  cd ../..;
+  207  ls
+  208  pdflatex --version
+  209  cat t
+  210  cd ../
+  211  ls
+  212  cat history0502.txt 
+  213  cd repos/
+  214  git clone git@github.com:lnls-fac/doc-sands-adaptation.git
+  215  ls
+  216  cd doc-sands-adaptation/
+  217  ls
+  218  git branch --all
+  219  git status
+  220  git fetch --all --prune
+  221  git merge
+  222  git branch add-info-coleff
+  223  git branch --all
+  224  git branch
+  225  git checkout add-info-coleff 
+  226  git branch
+  227  code -n ./
+  228  git status
+  229  git add *
+  230  git status
+  231  git commit -m "MNT: Add fotenote to collective effects section."
+  232  git status
+  233  git config --list
+  234  git push --help
+  235  git status
+  236  git push -u origin add-info-coleff 
+  237  git status
+  238  git add *
+  239  git status
+  240  git commit -m "MNT: Syntax correction of the '\note{}' LaTeX command"
+  241  git push
+  242  git config -l
+  243  git branch
+  244  git status
+  245  git push
+  246  exit
+  247  ls
+  248  cat texput.log
+  249  cd reos
+  250  cd repos
+  251  ls
+  252  cd doc-sands-adaptation/
+  253  ls
+  254  git branch
+  255  cd ./
+  256  cd ../
+  257  cd pyaccel
+  258  branch
+  259  git branch
+  260  ls
+  261  cd examples/
+  262  ls
+  263  git branch
+  264  cd ~/
+  265  cd repos/tutorials/
+  266  code -n ./
+  267  mambda activate sirius
+  268  mamba activate sirius
+  269  code -n ./
+  270  branch
+  271  git branch
+  272  exit
+  273  history
+  274  ls
+  275  cd repos
+  276  ls
+  277  cd pymodels/
+  278  ls
+  279  code -n ./
+  280  exit
+  281  ls
+  282  history
+  283  history > history_1102.txt
+  284  ls
+  285  cat history_1102.txt 
+  286  ls
+  287  cd -/
+  288  cd /
+  289  ls
+  290  cd opt
+  291  ls
+  292  cd -/
+  293  cd -
+  294  cd ~/
+  295  ls
+  296  cd repos
+  297  ls
+  298  cd scripts/
+  299  ls
+  300  cd bin
+  301  ls
+  302  code -n ./
+  303  exit
+  304  history 
+  305  cd repos/tutorials/
+  306  ls
+  307  branch
+  308  git branch
+  309  hit branch --all
+  310  git branch --all
+  311  cd ~
+  312  ls
+  313  history
+  314  git clone https://github.com/HenriqueWS11/fac-henrique.git
+  315  ls
+  316  cd fac-henrique/
+  317  ls
+  318  branch
+  319  git branch
+  320  gir branch -all
+  321  git branch -all
+  322  git branch --all
+  323  cd ./
+  324  cd ../
+  325  cd repos
+  326  git branch
+  327  ls
+  328  cd tutorials/
+  329  git branch
+  330  cd -
+  331  cd doc-sands-adaptation/
+  332  git branch --all
+  333  cd -
+  334  cd tutorials/
+  335  git branch -all
+  336  git branch --all
+  337  git status
+  338  cd ~/fac-henrique/
+  339  git status
+  340  git branch
+  341  history
+  342  git branch add-initial-folders
+  343  git branch -M main
+  344  git branch --all
+  345  git status
+  346  git branch -h
+  347  git branch
+  348  git status
+  349  git branch add-things
+  350  git pull origin main
+  351  git status
+  352  cd ../
+  353  ls
+  354  cd fac-henrique/
+  355  git init
+  356  git remote add origin https://github.com/HenriqueWS11/fac-henrique.git
+  357  git status
+  358  git add .
+  359  git status
+  360  git commit -m 'Initial commit'
+  361  git status
+  362  git remote
+  363  git remote show origin
+  364  history
+  365  git config -h
+  366  git config --list
+  367  git push -u origin main
+  368  git add.
+  369  git add .
+  370  git commit -m 'Adding terminal history .txt file'
+  371  git status
+  372  git push -m origin main
+  373  git push -u origin main
+  374  git push -m origin main
+  375  git push -u origin main
+  376  git remote
+  377  git remote remove origin
+  378  git remote add origin git@github.com:HenriqueWS11/fac-henrique.git
+  379  git remote
+  380  git remote show origin
+  381  git remote -v
+  382  ls -al ./ssh
+  383  ls -al ~/.ssh
+  384  ssh -T git@github.com
+  385  GIT STATUS
+  386  git status
+  387  ls
+  388  git add .
+  389  git status
+  390  git commit -m 'Testing'
+  391  git push -u origin main
+  392  git branch --all
+  393  git branch make-changes
+  394  git branch
+  395  git checkout make-changes
+  396  git branch
+  397  git history
+  398  history
+  399  git fetch origin
+  400  git status
+  401  git merge
+  402  git remote
+  403  git branch
+  404  git branch --all
+  405  git merge make-changes
+  406  mkdir repos
+  407  ls
+  408  cd repos/
+  409  cd ../
+  410  git add .
+  411  git status
+  412  git config
+  413  git config -l
+  414  git add repos
+  415  git status
+  416  git branch --all
+  417  git commit -m 'Adding repos folder'
+  418  git remote
+  419  git remote show origin
+  420  git push -u origin make-changes
+  421  git branch
+  422  git push
+  423  ls
+  424  cd repos
+  425  echo "Testing git stuff" > git_tests.txt
+  426  ls
+  427  git status
+  428  git add .
+  429  git status
+  430  cd ../
+  431  git status
+  432  git commit -m 'Adding repos folder and .txt test file'
+  433  git status
+  434  git push origin make-changes 
+  435  git branch --all
+  436  exit
+  437  cd repos
+  438  ls
+  439  cd doc-sands-adaptation/
+  440  code -n ./
+  441  latex
+  442  git status
+  443  git branch --all
+  444  history
+  445  git branch --all
+  446  git fetch
+  447  git status
+  448  git merge
+  449  git status
+  450  exit
+  451  ls
+  452  cd repos
+  453  ls
+  454  cd tutorials/
+  455  code -n ./
+  456  ext
+  457  exit
+  458  ls
+  459  cd repos
+  460  cd -
+  461  çs
+  462  ls
+  463  cd fac-henrique/
+  464  ls
+  465  git branch --all
+  466  git status
+  467  git switch main
+  468  git switch make-changes 
+  469  cd ~/
+  470  exit
+  471  cd repos
+  472  ls
+  473  cd doc-sands-adaptation/
+  474  code -n ./
+  475  git branch all
+  476  git branch --all
+  477  git switch origin signs-correction 
+  478  git switch origin/signs-correction
+  479  git status
+  480  git branch -all
+  481  git branch --all
+  482  ckout -b signs-correction origin/signs-correction
+  483  git checkout -h
+  484  code -n ./
+  485  git status
+  486  cd ~/repos
+  487  cd tutorials/
+  488  code -n ./
+  489  exit
+  490  conda activate sirius
+  491  sudo apt update
+  492  sudo apt upgrade
+  493  ls
+  494  cd coding
+  495  ls
+  496  cd tutorial_notebooks/
+  497  cd ..
+  498  code -n ./
+  499  cd ..
+  500  code -n ./
+  501  git status
+  502  git add .
+  503  git status
+  504  e xit
+  505  exit
+  506  cd ~
+  507  cd fac-henrique/
+  508  ls
+  509  git status
+  510  git branch --all
+  511  git fetch origin main
+  512  git status
+  513  git add .
+  514  git status
+  515  git commit -m "Renaming folders, changing notebooks, adding sands-improvs folder."
+  516  git status
+  517  git push origin main
+  518  history
+  519  git remote show origin
+  520  git branch --all
+  521  git switch make-changes 
+  522  git remote show origin
+  523  git branch --vv
+  524  git branch -vv
+  525  git status
+  526  git switch main
+  527  code -n ./
+  528  git branch --remote
+  529  git branch --local
+  530  git branch -h
+  531  git branch -l
+  532  git branch --all
+  533  git checkout -h
+  534  cd ~
+  535  ls
+  536  cd repos
+  537  ls
+  538  cd doc-sands-adaptation/
+  539  git branch --all
+  540  git checkout signs-correction 
+  541  git branch --all
+  542  git fetch -h
+  543  git fetch
+  544  git status
+  545  git switch add-info-coleff 
+  546  code -n ./
+  547  history
+  548  ls -al ~/.ssh
+  549  ssh -h
+  550  ssh -T git@github.com
+  551  cd ../
+  552  ls
+  553  cd ~/fac-henrique/
+  554  ls
+  555  cd coding
+  556  ls
+  557  mkdir initial_explorations
+  558  code -n ./
+  559  exit
+  560  cd ~/fac-henrique/coding/
+  561  code -n ./
+  562  cd ../
+  563  code -n ./
+  564  git statis
+  565  git status
+  566  git branch
+  567  git branch --all
+  568  history
+  569  git branch -vv
+  570  git remote show origin
+  571  git push
+  572  exit
+  573  cd ~/
+  574  cd fac-henrique/
+  575  cd coding
+  576  code -n ./
+  577  cd ../
+  578  git status
+  579  git add .
+  580  git status
+  581  git commit -m 'Developping betatron_trajectories.ipynb code'
+  582  git status
+  583  git branch --all
+  584  git push -u origin main
+  585  git status
+  586  exit
+  587  cd ~/fac-henrique/coding
+  588  code -n ./
+  589  exit
+  590  cd ~/fac-henrique/
+  591  cd coding/
+  592  code -n ./
+  593  cd ../
+  594  git branch --all
+  595  git status
+  596  git add .
+  597  git commit -m 'Developments of tune jupyter code and Sands reading/highlighting'
+  598  git status
+  599  git push
+  600  exit
+  601  cd ~/
+  602  cd fac-henrique/
+  603  cd coding/
+  604  code -n ./
+  605  cd ../
+  606  git status
+  607  git commit -a "Update reading sands"
+  608  git add .
+  609  git commit -u "Update Sands"
+  610  git status
+  611  git commit -u "update sands"
+  612  git status
+  613  code -n
+  614  exit
+  615  cd fac-henrique/
+  616  ls
+  617  cd coding
+  618  code -n ./
+  619  exit
+  620  cd fac
+  621  cd fac-henrique/
+  622  code -n ./
+  623  cd coding/
+  624  code -n ./
+  625  exit
+  626  cd fac-henrique/coding/
+  627  code -n ./
+  628  exit
+  629  cd fac-henrique/
+  630  cd ~
+  631  ls
+  632  cd repos
+  633  ls
+  634  cd doc-sands-adaptation/
+  635  git branch --all
+  636  git status
+  637  code -n ./
+  638  history
+  639  git fetch --help
+  640  git branch --vv
+  641  git branch -vv
+  642  git remote show origin
+  643  git fetch --prune
+  644  git remote show origin
+  645  git branch -vv
+  646  ~
+  647  cd ~
+  648  cd fac-henrique/
+  649  ls
+  650  history > history_0326.txt
