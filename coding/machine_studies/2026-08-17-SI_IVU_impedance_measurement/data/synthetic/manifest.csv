@@ -1,0 +1,17 @@
+cfg_id,file_path,gap,delta_q,y0
+0,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_1p4nC_y0_1mm.pickle,0.004,1.4e-09,0.001
+1,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_1p4nC_y0_1p4mm.pickle,0.004,1.4e-09,0.0014
+2,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_1p4nC_y0_1p8mm.pickle,0.004,1.4e-09,0.0018
+3,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_1p4nC_y0_2p2mm.pickle,0.004,1.4e-09,0.0022
+4,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_2p6nC_y0_1mm.pickle,0.004,2.6e-09,0.001
+5,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_2p6nC_y0_1p4mm.pickle,0.004,2.6e-09,0.0014
+6,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_2p6nC_y0_1p8mm.pickle,0.004,2.6e-09,0.0018
+7,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_4mm_dq_2p6nC_y0_2p2mm.pickle,0.004,2.6e-09,0.0022
+8,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_1p4nC_y0_1mm.pickle,0.014,1.4e-09,0.001
+9,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_1p4nC_y0_1p4mm.pickle,0.014,1.4e-09,0.0014
+10,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_1p4nC_y0_1p8mm.pickle,0.014,1.4e-09,0.0018
+11,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_1p4nC_y0_2p2mm.pickle,0.014,1.4e-09,0.0022
+12,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_2p6nC_y0_1mm.pickle,0.014,2.6e-09,0.001
+13,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_2p6nC_y0_1p4mm.pickle,0.014,2.6e-09,0.0014
+14,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_2p6nC_y0_1p8mm.pickle,0.014,2.6e-09,0.0018
+15,/home/henrique.silvestre/fac-henrique/coding/machine_studies/2026-08-17-SI_IVU_impedance_measurement/data/synthetic/synt_gap_14mm_dq_2p6nC_y0_2p2mm.pickle,0.014,2.6e-09,0.0022
