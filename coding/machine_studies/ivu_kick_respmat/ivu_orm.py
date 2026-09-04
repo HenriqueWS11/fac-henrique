@@ -50,7 +50,7 @@ def calc_ivu_orm(delta_vkick=5e-6, ivu_number=1):
         ivu_indices = ivu_indices_all[2:]
     else:
         raise ValueError("Invalid IVU number. Use 1 or 2.")
-    
+
     set_ivu_kick(model, ivu_indices, +delta_vkick/2)
     cod_pos = pyaccel.tracking.find_orbit4(model, indices='open')  # [m]
 
@@ -68,7 +68,7 @@ def calc_ivu_orm(delta_vkick=5e-6, ivu_number=1):
     info = {
         'model': model,
         'spos': spos,  # [m]
-        'spos_bpms':spos[bpm_indices],  # [m]
+        'spos_bpms': spos[bpm_indices],  # [m]
         'bpm_indices': bpm_indices,
         'ivu_indices': ivu_indices,
         'ivu_indices_all': ivu_indices_all,
