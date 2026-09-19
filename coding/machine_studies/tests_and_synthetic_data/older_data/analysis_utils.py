@@ -83,170 +83,28 @@ def add_charge_information(data):
     return data
 
 
-def get_acquisition_parity_from_bpm_indices(data_acq):
-    """Get acquisition BPM parity from the first BPM index.
+def select_data_by_parity(data, parity="odd"):
+    """Select measurement dictionaries by BPM parity.
 
     Args:
-        data_acq (dict): One acquisition dictionary.
+        data (list): List of measurement dictionaries.
+        parity (str): BPM parity. Use 'odd', 'even' or 'all'.
 
     Returns:
-        parity (str): Acquisition parity, 'odd' or 'even'.
+        data_sel (list): Selected measurement dictionaries.
 
     """
-    first_bpm_idx = int(data_acq["bpm_indcs"][0])  # []
-
-    if first_bpm_idx % 2 == 0:
-        parity = "even"
+    if parity == "all":
+        data_sel = data
+    elif parity in ["odd", "even"]:
+        data_sel = [
+            data_i for data_i in data
+            if data_i["params"]["parity"] == parity
+        ]
     else:
-        parity = "odd"
+        raise ValueError("parity must be 'odd', 'even' or 'all'.")
 
-    return parity
-
-
-def join_odd_even_bpm_arrays(odd_array, even_array, return_list=False):
-    """Join odd and even BPM arrays into one full BPM array.
-
-    Args:
-        odd_array (array-like): Odd BPM array. First dimension is BPM index.
-        even_array (array-like): Even BPM array. First dimension is BPM index.
-        return_list (bool): Whether to return a Python list instead of a numpy array.
-
-    Returns:
-        joined_array (numpy.ndarray or list): Full BPM array.
-    """
-    odd_array = np.asarray(odd_array)
-    even_array = np.asarray(even_array)
-
-    if odd_array.shape != even_array.shape:
-        raise ValueError(
-            "Odd and even BPM arrays must have the same shape: "
-            f"odd={odd_array.shape}, even={even_array.shape}."
-        )
-
-    joined_shape = (2 * odd_array.shape[0],) + odd_array.shape[1:]  
-    # e.g., (160,) + (500,) = (160, 500)
-
-    joined_array = np.empty(
-        joined_shape,
-        dtype=np.result_type(odd_array, even_array),
-    )
-
-    # Convention:
-    # even BPM data -> Python indexes 0, 2, 4, ...
-    # odd  BPM data -> Python indexes 1, 3, 5, ...
-    joined_array[::2] = even_array
-    joined_array[1::2] = odd_array
-
-    if return_list:
-        joined_array = joined_array.tolist()
-
-    return joined_array
-
-
-def join_odd_even_acquisitions(data):
-    """Join alternating odd/even BPM acquisitions into full-BPM acquisitions.
-
-    Args:
-        data (list): List of measurement dictionaries. Inside each
-            configuration, data_i["data"] must be ordered as
-            odd, even, odd, even, ...
-
-    Returns:
-        data_joined (list): Data with odd/even sub-acquisitions joined.
-            Each acquisition has 160 BPMs.
-
-    """
-    position_keys = [
-        "b1_posx",
-        "b1_posy",
-        "b2_posx",
-        "b2_posy",
-    ]
-
-    scalar_mean_keys = [
-        "stored_current",
-        "rf_frequency",
-        "tunex",
-        "tuney",
-        "ivu18_08_gap",
-        "ivu18_14_gap",
-        "b1_sum",
-        "b2_sum",
-        "bt_sum",
-        "b1_curr",
-        "b2_curr",
-        "delta_curr",
-        "b1_charge",
-        "b2_charge",
-        "delta_charge",
-        "delta_charge_mean",
-    ]
-
-    data_joined = []
-
-    for data_i in data:
-        data_meas = data_i["data"]
-
-        if len(data_meas) % 2 != 0:
-            raise ValueError(
-                "The number of sub-acquisitions must be even "
-                "because the expected order is odd, even, odd, even, ..."
-            )
-
-        joined_meas = []
-
-        first_parity = get_acquisition_parity_from_bpm_indices(data_meas[0])
-
-        for acq in range(0, len(data_meas), 2):
-            first_acq = data_meas[acq]
-            second_acq = data_meas[acq + 1]
-
-            if first_parity == "odd":
-                odd_acq = first_acq
-                even_acq = second_acq
-            elif first_parity == "even":
-                even_acq = first_acq
-                odd_acq = second_acq
-
-            joined_acq = odd_acq.copy()
-
-            for key in position_keys:
-                joined_acq[key] = join_odd_even_bpm_arrays(
-                    odd_acq[key],
-                    even_acq[key],
-                )  # [um]
-
-            for key in scalar_mean_keys:
-                if key in odd_acq and key in even_acq:
-                    joined_acq[key] = 0.5 * (
-                        odd_acq[key] + even_acq[key]
-                    )
-
-            joined_acq["bpm_indcs"] = join_odd_even_bpm_arrays(
-                odd_acq["bpm_indcs"],
-                even_acq["bpm_indcs"],
-            )
-
-            joined_acq["bpm_names"] = join_odd_even_bpm_arrays(
-                odd_acq["bpm_names"],
-                even_acq["bpm_names"],
-                return_list=True,
-            )
-
-            joined_meas.append(joined_acq)
-
-        params = data_i["params"].copy()
-        params["num_acquisitions"] = len(joined_meas)
-        params["parity"] = "all"
-        params["acquisition_mode"] = "odd_even_joined"
-
-        data_i_joined = data_i.copy()
-        data_i_joined["params"] = params
-        data_i_joined["data"] = joined_meas
-
-        data_joined.append(data_i_joined)
-
-    return data_joined
+    return data_sel
 
 
 def make_delta_q_group(delta_charge, step_nC=0.1):
@@ -283,22 +141,20 @@ def make_config_table(data, gap_key="ivu18_08_gap", delta_q_group_step_nC=0.1):
         data_meas = data_i["data"]
         first_acq = data_meas[0]
 
-        gap = np.mean([
-            data_acq[gap_key]
-            for data_acq in data_meas
-        ])  # [mm]
-
+        gap = first_acq[gap_key]  # [mm]
         delta_charge = first_acq["delta_charge_mean"]  # [nC]
         y0 = params["y0"]  # [mm]
-        parity = params.get("parity", "all")
 
-        n_acq = len(data_meas)  # []
+        parity = params["parity"]
+
+        n_acq = params["num_acquisitions"]  # []
         n_bpms, n_turns = np.shape(first_acq["b1_posy"])  # [], []
 
+        # Mean current values across acquisitions
         b1_curr = np.mean(np.array([
             data_acq["b1_curr"] for data_acq in data_meas
         ]))  # [mA]
-
+        
         b2_curr = np.mean(np.array([
             data_acq["b2_curr"] for data_acq in data_meas
         ]))  # [mA]
@@ -307,6 +163,7 @@ def make_config_table(data, gap_key="ivu18_08_gap", delta_q_group_step_nC=0.1):
             data_acq["delta_curr"] for data_acq in data_meas
         ]))  # [mA]
 
+        # In values to group similar Delta q's from diff. configurations
         delta_q_group = make_delta_q_group(
             delta_charge,
             step_nC=delta_q_group_step_nC,
@@ -335,17 +192,20 @@ def make_config_table(data, gap_key="ivu18_08_gap", delta_q_group_step_nC=0.1):
     return config_table
 
 
-def plot_currents_vs_acquisition(data, config_table, bunch=1, cfgs=[0]):
+def plot_currents_vs_acquisition(config_table, bunch=1, cfgs=[0], data=None):
     """Plot bunch current versus acquisition number.
 
     Args:
-        data (list): List of selected measurement dictionaries.
         config_table (pandas.DataFrame): Table with information about
             the data to be analyzed.
         bunch (int): Number of the selected bunch (1 or 2)
         cfgs (list): Configuration indexes.
+        data (list): List of selected measurement dictionaries.
 
     """
+    if data is None:
+        data = data_sel
+
     fig, ax = plt.subplots(figsize=(10, 5), layout='constrained')
 
     for cfg in cfgs:
@@ -361,7 +221,7 @@ def plot_currents_vs_acquisition(data, config_table, bunch=1, cfgs=[0]):
 
         label_cfg = (
             rf"gap={row['gap']:.2f} mm, "
-            rf"$y_0$={row['y0']:.2f} mm"
+            rf"$y_0$={row['y0']:.2f} mm, {row['parity']}"
         )
 
         ax.plot(
@@ -387,13 +247,13 @@ def stack_orbit_data(data, plane="y"):
         plane (str): Transverse plane. Use 'x' or 'y'.
 
     Returns:
-        b1_pos (list): Bunch 1 position [µm].
-        b2_pos (list): Bunch 2 position [µm].
-        delta_pos (list): Bunch-to-bunch difference [µm].
+        b1_pos (numpy.ndarray): Bunch 1 position array with shape
+            (n_configs, n_acq, n_bpms, n_turns) [µm].
+        b2_pos (numpy.ndarray): Bunch 2 position array with shape
+            (n_configs, n_acq, n_bpms, n_turns) [µm].
+        delta_pos (numpy.ndarray): Bunch-to-bunch difference with shape
+            (n_configs, n_acq, n_bpms, n_turns) [µm].
 
-        All 3 are lists of arrays with shape 
-            (n_acq, n_bpms, n_turns), each element 
-            corresponding to one configuration
     """
     if plane not in ["x", "y"]:
         raise ValueError("plane must be 'x' or 'y'.")
@@ -401,28 +261,17 @@ def stack_orbit_data(data, plane="y"):
     key1 = f"b1_pos{plane}"
     key2 = f"b2_pos{plane}"
 
-    b1_pos = []
-    b2_pos = []
+    b1_pos = np.array([
+        [data_acq[key1] for data_acq in data_i["data"]]
+        for data_i in data
+    ])  # [µm]
 
-    for data_i in data:
+    b2_pos = np.array([
+        [data_acq[key2] for data_acq in data_i["data"]]
+        for data_i in data
+    ])  # [µm]
 
-        b1_cfg = np.array([
-            data_acq[key1]
-            for data_acq in data_i["data"]
-        ])  # [µm]
-
-        b2_cfg = np.array([
-            data_acq[key2]
-            for data_acq in data_i["data"]
-        ])  # [µm]
-
-        b1_pos.append(b1_cfg)
-        b2_pos.append(b2_cfg)
-
-    delta_pos = [
-        b1 - b2
-        for b1, b2 in zip(b1_pos, b2_pos)
-    ]  # [µm]
+    delta_pos = b1_pos - b2_pos  # [µm]
 
     return b1_pos, b2_pos, delta_pos
 
@@ -439,10 +288,7 @@ def normalize_by_charge(delta_pos, config_table):
 
     """
     delta_q = config_table["delta_charge"].to_numpy()  # [nC]
-    delta_pos_norm = [
-        cfg / delta_q[i]
-        for i, cfg in enumerate(delta_pos)
-    ]
+    delta_pos_norm = delta_pos / delta_q[:, None, None, None]  # [µm/nC]
     
     return delta_pos_norm
 
@@ -488,6 +334,30 @@ def get_ylabel(plane="y", normalized=False):
     return ylabel
 
 
+def get_spos_by_parity(spos_bpms, parity="odd"):
+    """Select BPM positions for a given BPM parity.
+
+    Args:
+        spos_bpms (numpy.ndarray): BPM positions array [m].
+        parity (str): BPM parity. Use 'odd', 'even' or 'all'.
+
+    Returns:
+        spos_bpms (numpy.ndarray): Array with selected BPMs 
+            positions [m].
+
+    """
+    if parity == "all":
+        spos_bpms = spos_bpms
+    elif parity == 'odd':
+        spos_bpms = spos_bpms[1::2]
+    elif parity == 'even':
+        spos_bpms = spos_bpms[::2]
+    else:
+        raise ValueError("parity must be 'odd', 'even' or 'all'.")
+
+    return spos_bpms
+
+
 def plot_single_profile(data, config_table, spos_bpms, cfg=0, acq=0, turn=0, plane="y", normalized=False):
     """Plot Delta u profile across BPMs for one configuration, acquisition and turn.
 
@@ -503,12 +373,9 @@ def plot_single_profile(data, config_table, spos_bpms, cfg=0, acq=0, turn=0, pla
 
     """
     delta_u = get_delta_u(data, config_table, plane=plane, normalized=normalized)
-    bpm_indices = data[cfg]['data'][acq]['bpm_indcs']
-    spos_bpms = spos_bpms[bpm_indices]
-
     ylabel = get_ylabel(plane=plane, normalized=normalized)
 
-    profile = delta_u[cfg][acq, :, turn]
+    profile = delta_u[cfg, acq, :, turn]
 
     row = config_table.iloc[cfg]
 
@@ -520,7 +387,8 @@ def plot_single_profile(data, config_table, spos_bpms, cfg=0, acq=0, turn=0, pla
         rf"$\Delta {plane}$ profile, cfg={cfg}, acq={acq}, turn={turn} "
         rf"(gap={row['gap']:.1f} mm, "
         rf"$\Delta q$={row['delta_charge']:.1f} nC, "
-        rf"$y_0$={row['y0']:.1f} mm)"
+        rf"$y_0$={row['y0']:.1f} mm, "
+        rf"{row['parity']})"
     )
     ax.set_xlabel("spos [m]")
     ax.set_ylabel(ylabel)
@@ -544,9 +412,6 @@ def plot_turns_in_acquisition(data, config_table, spos_bpms, cfg=0, acq=0, turns
 
     """
     delta_u = get_delta_u(data, config_table, plane=plane, normalized=normalized)
-    bpm_indices = data[cfg]['data'][acq]['bpm_indcs']
-    spos_bpms = spos_bpms[bpm_indices]
-    
     ylabel = get_ylabel(plane=plane, normalized=normalized)
 
     row = config_table.iloc[cfg]
@@ -554,7 +419,7 @@ def plot_turns_in_acquisition(data, config_table, spos_bpms, cfg=0, acq=0, turns
     fig, ax = plt.subplots(figsize=(10, 5))
 
     for turn in turns:
-        profile = delta_u[cfg][acq, :, turn]  # [um] or [um/nC]
+        profile = delta_u[cfg, acq, :, turn]  # [um] or [um/nC]
         ax.plot(
             spos_bpms,
             profile,
@@ -568,7 +433,8 @@ def plot_turns_in_acquisition(data, config_table, spos_bpms, cfg=0, acq=0, turns
         rf"$\Delta {plane}$ $vs$ $spos$ per turn, acq={acq} "
         rf"(gap={row['gap']:.1f} mm, "
         rf"$\Delta q$={row['delta_charge']:.2f} nC, "
-        rf"$y_0$={row['y0']:.1f} mm)"
+        rf"$y_0$={row['y0']:.1f} mm, "
+        rf"{row['parity']})"
     )
     ax.set_xlabel("spos [m]")
     ax.set_ylabel(ylabel)
@@ -580,7 +446,7 @@ def plot_turns_in_acquisition(data, config_table, spos_bpms, cfg=0, acq=0, turns
     plt.show()
 
 
-def plot_one_bpm_for_acquisitions(data, config_table, spos_bpms, cfg=0, acqs=[0], bpm=0, plane="y", normalized=False, alpha=0.3):
+def plot_one_bpm_for_acquisitions(data, config_table, spos_bpms, cfg=0, acqs=[0], bpm=0, plane="y", normalized=False):
     """Plot, for one BPM, the Delta u profile across turns for several acquisitions.
 
     Args:
@@ -595,25 +461,22 @@ def plot_one_bpm_for_acquisitions(data, config_table, spos_bpms, cfg=0, acqs=[0]
 
     """
     delta_u = get_delta_u(data, config_table, plane=plane, normalized=normalized)
-    bpm_indices = data[cfg]['data'][0]['bpm_indcs']  # For each cfg, all acqs have the same bpm_indcs
-    spos_bpms = spos_bpms[bpm_indices]
-
     ylabel = get_ylabel(plane=plane, normalized=normalized)
 
     row = config_table.iloc[cfg]
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    turns = range(delta_u[0].shape[2])
+    turns = range(delta_u.shape[3])
 
     for i, acq in enumerate(acqs):
-        bpm_profile = delta_u[cfg][acq, bpm, :]  # [um] or [um/nC]
+        bpm_profile = delta_u[cfg, acq, bpm, :]  # [um] or [um/nC]
 
         ax.plot(
             turns,
             bpm_profile,
             ".-",
-            alpha=alpha,
+            alpha=0.3,
             color=f'C{i}',
             label=f"acq {acq}"
         )
@@ -622,7 +485,7 @@ def plot_one_bpm_for_acquisitions(data, config_table, spos_bpms, cfg=0, acqs=[0]
         ax.axhline(
             mean_value,
             linestyle='--',
-            linewidth=2.0,
+            linewidth=1.5,
             color=f'C{i}',
             label=f"<acq {acq}> = {mean_value:.2f} µm"
         )
@@ -632,7 +495,8 @@ def plot_one_bpm_for_acquisitions(data, config_table, spos_bpms, cfg=0, acqs=[0]
         rf"$\Delta {plane}$ BPM {bpm} $vs$ turns "
         rf"(gap={row['gap']:.1f} mm, "
         rf"$\Delta q$={row['delta_charge']:.2f} nC, "
-        rf"$y_0$={row['y0']:.1f} mm)"
+        rf"$y_0$={row['y0']:.1f} mm, "
+        rf"{row['parity']})"
     )
     ax.set_xlabel("turn idx []")
     ax.set_ylabel(ylabel)
@@ -658,9 +522,6 @@ def plot_acquisition_means(data, config_table, spos_bpms, cfg=0, acqs="all", pla
 
     """
     delta_u = get_delta_u(data, config_table, plane=plane, normalized=normalized)
-    bpm_indices = data[cfg]['data'][0]['bpm_indcs']  # For each cfg, all acqs have the same bpm_indcs
-    spos_bpms = spos_bpms[bpm_indices]
-
     ylabel = get_ylabel(plane=plane, normalized=normalized)
 
     delta_u_cfg = delta_u[cfg]  # shape (n_acq, n_bpms, n_turns)
@@ -710,7 +571,8 @@ def plot_acquisition_means(data, config_table, spos_bpms, cfg=0, acqs="all", pla
         rf"$\langle\Delta {plane}\rangle$ profile per acquisition "
         rf"(gap={row['gap']:.2f} mm, "
         rf"$\Delta q$={row['delta_charge']:.3f} nC, "
-        rf"$y_0$={row['y0']:.2f} mm)"
+        rf"$y_0$={row['y0']:.2f} mm, "
+        rf"{row['parity']})"
     )
     ax.set_xlabel("spos [m]")
     ax.set_ylabel(ylabel)
@@ -734,22 +596,11 @@ def process_delta_u(delta_u):
             Arrays have shape (n_configs, n_bpms).
 
     """
-    mean = []
-    std = []
-    sem = []
+    mean = np.mean(delta_u, axis=(1, 3))  # [um] or [um/nC]
+    std = np.std(delta_u, axis=(1, 3))  # [um] or [um/nC]
 
-    for cfg in delta_u:
-
-        mean_cfg = np.mean(cfg, axis=(0,2))
-        std_cfg = np.std(cfg, axis=(0,2))
-
-        n_samples = cfg.shape[0] * cfg.shape[2]
-
-        sem_cfg = std_cfg / np.sqrt(n_samples)
-
-        mean.append(mean_cfg)
-        std.append(std_cfg)
-        sem.append(sem_cfg)
+    n_samples = delta_u.shape[1] * delta_u.shape[3]  # []
+    sem = std / np.sqrt(n_samples)  # [um] or [um/nC]
 
     delta_u_proc = {
         "mean": mean,
@@ -783,89 +634,51 @@ def get_processed_delta_u(data, config_table, plane="y", normalized=False):
     return delta_u_proc
 
 
-def plot_config_mean(data, config_table, spos_bpms, cfgs=None, ref_cfg=None, plane="y", normalized=False, error_par="sem", alpha=0.7):
-    """Plot mean profile and error bars for selected configurations.
+def plot_config_mean(data, config_table, spos_bpms, cfgs=[0], plane="y", normalized=False, error_par="sem"):
+    """Plot mean profile and error bars for one configuration.
 
     Args:
         data (list): List of measurement dictionaries.
         config_table (pandas.DataFrame): Configuration table.
         spos_bpms (numpy.ndarray): Array with BPM positions.
-        cfgs (list): Configuration indexes. None uses all configurations.
-        ref_cfg (int): Configuration used as zero reference. The reference
-            configuration must contain data from all BPMs.
+        cfgs (list): Configuration indexes.
         plane (str): Transverse plane.
         normalized (bool): Whether Delta u is charge normalized.
         error_par (str): Error parameter. Use 'std' or 'sem'.
-        alpha (float): Plot transparency.
-        
+
     """
+    delta_u_proc = get_processed_delta_u(data, config_table, plane=plane, normalized=normalized)
 
-    delta_u_proc = get_processed_delta_u(
-        data,
-        config_table,
-        plane=plane,
-        normalized=normalized,
-    )
-
-    ylabel = get_ylabel(
-        plane=plane,
-        normalized=normalized,
-    )
-
-    if cfgs is None:
-        cfgs = range(len(delta_u_proc["mean"]))
+    ylabel = get_ylabel(normalized=normalized)
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
     for cfg in cfgs:
-
-        bpm_indices = data[cfg]["data"][0]["bpm_indcs"]
-        spos_bpms_cfg = spos_bpms[bpm_indices]
-
-        mean = delta_u_proc["mean"][cfg]
-        err = delta_u_proc[error_par][cfg]
-
-        if ref_cfg is not None:
-
-            mean_ref = delta_u_proc["mean"][ref_cfg][bpm_indices]
-            err_ref = delta_u_proc[error_par][ref_cfg][bpm_indices]
-
-            mean = mean - mean_ref
-
-            # Uncertainty of the difference between two independent measurements.
-            if cfg == ref_cfg:
-                err = np.zeros_like(err)
-            else:
-                err = np.sqrt(
-                    err**2 + err_ref**2
-                )
+        mean = delta_u_proc["mean"][cfg]  # []
+        err_key = error_par
+        err = delta_u_proc[err_key][cfg]  # []
 
         row = config_table.iloc[cfg]
 
         ax.errorbar(
-            spos_bpms_cfg,
+            spos_bpms,
             mean,
-            yerr=err,
+            yerr= err,
             marker=".",
             capsize=3,
-            alpha=alpha,
-            label=(
-                rf"$gap$={row['gap']:.1f} mm | "
-                rf"$\Delta q$={row['delta_charge']:.1f} nC | "
-                rf"$y_0$={row['y0']:.1f} mm"
-            ),
+            alpha=0.7,
+            label=rf"$gap$={row['gap']:.1f} mm | $\Delta q$={row['delta_charge']:.1f} nC | $y_0$={row['y0']:.1f} mm"
         )
 
     ax.set_title(
         rf"{normalized*'Charge-norm. '}"
-        rf"$\langle\Delta {plane}\rangle_{{\rm acqs,turns}}$ profile"
+        rf"$\langle\Delta {plane}$"
+        r"$\rangle_{acqs,turns}$ profile"
     )
-
     ax.set_xlabel("spos [m]")
     ax.set_ylabel(ylabel)
     ax.grid(True)
     ax.legend()
-
     plt.show()
 
 
@@ -897,27 +710,8 @@ def plot_delta_u_bpm_vs_y0(data, config_table, bpm=0, gap=None, plane="y", norma
         normalized=normalized,
     )
 
-    bpm_indices = [
-        data_cfg['data'][0]['bpm_indcs']
-        for data_cfg in data
-    ]
-
-    bpm_index_list = [
-        (np.where(bpm_idx == bpm))
-        for bpm_idx in bpm_indices
-    ]
-
-    mean = np.array([
-        delta_u_proc_mean_cfg[bpm_index[0][0]] for
-        delta_u_proc_mean_cfg, bpm_index in 
-        zip(delta_u_proc["mean"], bpm_index_list)
-    ])  # [um] or [um/nC]
-
-    err = np.array([
-            delta_u_proc_err_cfg[bpm_index[0][0]] for
-            delta_u_proc_err_cfg, bpm_index in
-            zip(delta_u_proc[error_par], bpm_index_list)
-        ])  # [um] or [um/nC]
+    mean = delta_u_proc["mean"][:, bpm]  # [um] or [um/nC]
+    err = delta_u_proc[error_par][:, bpm] # [um] or [um/nC]
 
     delta_q_group = config_table["delta_q_group"].to_numpy()  # []
     delta_q_group_nC = config_table["delta_q_group_nC"].to_numpy()  # [nC]
@@ -971,37 +765,35 @@ def plot_delta_u_bpm_vs_y0(data, config_table, bpm=0, gap=None, plane="y", norma
 
 # Fit part
 
-def get_ivu_orms(orm, data):
-    """Split IVU ORM vector into x and y planes and select 
-        elements corresponding to proper BPM indices.
+def get_ivu_orms_by_parity(orm, n_bpms=160, parity="odd"):
+    """Select IVU ORM vectors for a given BPM parity.
 
     Args:
         orm (numpy.ndarray): IVU orbit response vector [um/urad].
-        data (list): List of measurement dictionaries.
+        n_bpms (int): Number of BPMs in the full ORM.
+        parity (str): BPM parity. Use 'odd', 'even' or 'all'.
 
     Returns:
-        M_ivu_x_cfgs (list): List of horizontal IVU response columns
-            for each data configuration [um/urad].
-        M_ivu_y_cfgs (list): List of vertical IVU response columns
-            for each data configuration [um/urad].
+        M_ivu_x (numpy.ndarray): Horizontal IVU response [um/urad].
+        M_ivu_y (numpy.ndarray): Vertical IVU response [um/urad].
 
     """
-    n_bpms = len(orm) // 2  # []
+    M_ivu_x_all = orm[:n_bpms]  # [um/urad]
+    M_ivu_y_all = orm[n_bpms:]  # [um/urad]
 
-    M_ivu_x = orm[:n_bpms]  # [um/urad]
-    M_ivu_y = orm[n_bpms:]  # [um/urad]
+    if parity == "all":
+        M_ivu_x = M_ivu_x_all
+        M_ivu_y = M_ivu_y_all
+    elif parity == "odd":
+        M_ivu_x = M_ivu_x_all[1::2]  # [um/urad]
+        M_ivu_y = M_ivu_y_all[1::2]  # [um/urad]
+    elif parity == "even":
+        M_ivu_x = M_ivu_x_all[::2]  # [um/urad]
+        M_ivu_y = M_ivu_y_all[::2]  # [um/urad]
+    else:
+        raise ValueError("parity must be 'odd', 'even' or 'all'.")
 
-    M_ivu_x_cfgs = [
-        M_ivu_x[data_i["data"][0]["bpm_indcs"]]
-        for data_i in data
-    ]
-
-    M_ivu_y_cfgs = [
-        M_ivu_y[data_i["data"][0]["bpm_indcs"]]
-        for data_i in data
-    ]
-
-    return M_ivu_x_cfgs, M_ivu_y_cfgs
+    return M_ivu_x, M_ivu_y
 
 
 def filter_delta_u_ivu(delta_u_proc_mean, plane="y"):
@@ -1022,111 +814,65 @@ def filter_delta_u_ivu(delta_u_proc_mean, plane="y"):
     return delta_u_filt
 
 
-def fit_theta_u(delta_u_filt, M_ivu_u_cfgs, delta_u_err=None):
-    """Project filtered orbit differences onto IVU response vectors.
+def fit_theta_u(delta_u_filt, M_ivu_u, delta_u_err=None):
+    """Project filtered orbit differences onto the IVU response vector.
 
     Args:
-        delta_u_filt (list): Filtered orbit differences.
-            One array per configuration [um].
-        M_ivu_u_cfgs (list): IVU response vector for each
-            data configuration [um/urad].
-        delta_u_err (list): Orbit uncertainty per configuration [um].
+        delta_u_filt (numpy.ndarray): Filtered orbit difference with shape
+            (n_configs, n_bpms) [um].
+        M_ivu_u (numpy.ndarray): IVU response vector [um/urad].
+        delta_u_err (numpy.ndarray): Orbit-difference uncertainty with shape
+            (n_configs, n_bpms) [um].
 
     Returns:
         theta_fit (dict): Projection fit result.
+
     """
-
-    theta = []
-    theta_err = []
-    model = []
-    residual = []
-    residual_rms = []
-    chi2 = []
-    reduced_chi2 = []
-
-    for cfg in range(len(delta_u_filt)):
-
-        delta = delta_u_filt[cfg]
-        M = M_ivu_u_cfgs[cfg]
-
-        if delta.shape[0] != M.shape[0]:
-            raise ValueError(
-                f"Configuration {cfg}: incompatible BPM dimensions "
-                f"delta={delta.shape}, M={M.shape}"
-            )
-
-        if delta_u_err is None:
-            weights = np.ones_like(delta)
-            err = None
-
-        else:
-            err = np.maximum(delta_u_err[cfg], 1e-30)
-            weights = 1 / err**2
-
-        numerator = np.sum(
-            weights * delta * M
+    if M_ivu_u.shape[0] != delta_u_filt.shape[1]:
+        raise ValueError(
+            "M_ivu_u and delta_u_filt have incompatible BPM dimensions: "
+            f"M_ivu_u has {M_ivu_u.shape[0]} BPMs, "
+            f"delta_u_filt has {delta_u_filt.shape[1]} BPMs."
         )
 
-        denominator = np.sum(
-            weights * M**2
-        )
+    if delta_u_err is None:
+        weights = np.ones_like(delta_u_filt)  # []
+    else:
+        delta_u_err = np.maximum(delta_u_err, 1e-30)  # [um]
+        weights = 1.0 / delta_u_err**2  # [1/um²]
 
-        theta_cfg = numerator / denominator
+    numerator = np.sum(
+        weights * delta_u_filt * M_ivu_u[None, :],
+        axis=1,
+    )  # [1/urad]
 
-        model_cfg = theta_cfg * M
-        residual_cfg = delta - model_cfg
+    denominator = np.sum(
+        weights * M_ivu_u[None, :]**2,
+        axis=1,
+    )  # [1/urad²]
 
-        if err is None:
-            theta_err_cfg = np.nan
-            chi2_cfg = np.nan
-            reduced_chi2_cfg = np.nan
+    theta = numerator / denominator  # [urad]
 
-        else:
-            theta_err_cfg = 1 / np.sqrt(denominator)
-
-            chi2_cfg = np.sum(
-                (residual_cfg / err)**2
-            )
-
-            dof_cfg = len(delta) - 1
-
-            if dof_cfg > 0:
-                reduced_chi2_cfg = chi2_cfg / dof_cfg
-            else:
-                reduced_chi2_cfg = np.nan
-
-        theta.append(theta_cfg)
-        theta_err.append(theta_err_cfg)
-        model.append(model_cfg)
-        residual.append(residual_cfg)
-
-        residual_rms.append(
-            np.sqrt(np.mean(residual_cfg**2))
-        )
-
-        chi2.append(chi2_cfg)
-        reduced_chi2.append(reduced_chi2_cfg)
+    model = theta[:, None] * M_ivu_u[None, :]  # [um]
+    residual = delta_u_filt - model  # [um]
+    residual_rms = np.sqrt(np.mean(residual**2, axis=1))  # [um]
 
     theta_fit = {
-        "theta": np.array(theta),
-        "theta_err": np.array(theta_err),
+        "theta": theta,
         "model": model,
         "residual": residual,
-        "residual_rms": np.array(residual_rms),
-        "chi2": np.array(chi2),
-        "reduced_chi2": np.array(reduced_chi2),
+        "residual_rms": residual_rms,
     }
 
     return theta_fit
 
 
-def fit_global_bpm_vector(delta_u_proc, M_ivu_u_cfgs, plane="y", error_par="sem"):
+def fit_global_bpm_vector(delta_u_proc, M_ivu_u, plane="y", error_par="sem"):
     """Fit global BPM vector projection for one plane.
 
     Args:
         delta_u_proc (dict): Processed Delta u dictionary.
-        M_ivu_u_cfgs (list): list of IVU response vector for each 
-            data configuration [um/urad].
+        M_ivu_u (numpy.ndarray): IVU response vector [um/urad].
         plane (str): Transverse plane.
         error_par (str): Error parameter. Use 'std' or 'sem'.
 
@@ -1143,7 +889,7 @@ def fit_global_bpm_vector(delta_u_proc, M_ivu_u_cfgs, plane="y", error_par="sem"
 
     theta_fit = fit_theta_u(
         delta_u_filt=delta_u_filt,
-        M_ivu_u_cfgs=M_ivu_u_cfgs,
+        M_ivu_u=M_ivu_u,
         delta_u_err=delta_u_err,
     )
 
@@ -1157,16 +903,14 @@ def fit_global_bpm_vector(delta_u_proc, M_ivu_u_cfgs, plane="y", error_par="sem"
     return bpm_fit
 
 
-def fit_global_bpm_vectors(delta_x_proc, delta_y_proc, M_ivu_x_cfgs, M_ivu_y_cfgs, error_par="sem"):
+def fit_global_bpm_vectors(delta_x_proc, delta_y_proc, M_ivu_x, M_ivu_y, error_par="sem"):
     """Fit global BPM vector projection for x and y planes.
 
     Args:
         delta_x_proc (dict): Processed Delta x dictionary.
         delta_y_proc (dict): Processed Delta y dictionary.
-        M_ivu_x_cfgs (list): List of horizontal IVU response vectors
-            for each data configuration [um/urad].
-        M_ivu_x_cfgs (list): List of vertical IVU response vectors
-            for each data configuration [um/urad].
+        M_ivu_x (numpy.ndarray): Horizontal IVU response vector [um/urad].
+        M_ivu_y (numpy.ndarray): Vertical IVU response vector [um/urad].
         error_par (str): Error parameter. Use 'std' or 'sem'.
 
     Returns:
@@ -1176,13 +920,13 @@ def fit_global_bpm_vectors(delta_x_proc, delta_y_proc, M_ivu_x_cfgs, M_ivu_y_cfg
     bpm_fits = {
         "x": fit_global_bpm_vector(
             delta_u_proc=delta_x_proc,
-            M_ivu_u_cfgs=M_ivu_x_cfgs,
+            M_ivu_u=M_ivu_x,
             plane="x",
             error_par=error_par,
         ),
         "y": fit_global_bpm_vector(
             delta_u_proc=delta_y_proc,
-            M_ivu_u_cfgs=M_ivu_y_cfgs,
+            M_ivu_u=M_ivu_y,
             plane="y",
             error_par=error_par,
         ),
@@ -1192,355 +936,73 @@ def fit_global_bpm_vectors(delta_x_proc, delta_y_proc, M_ivu_x_cfgs, M_ivu_y_cfg
 
 
 def plot_theta_projection(
-    data,
     config_table,
     spos_bpms,
     delta_u_filt,
-    delta_u_err,
     theta_fit,
-    M_ivu_u_cfgs,
     plane="y",
     cfg=0,
-    ref_cfg=None,
-    normalized=False,
 ):
-    """Plot measured orbit, theta projection and residual.
+    """Plot filtered orbit, projected model and residual for one configuration.
 
     Args:
-        data (list): List of measurement dictionaries.
         config_table (pandas.DataFrame): Configuration table.
-        spos_bpms (numpy.ndarray): Full BPM longitudinal positions [m].
-        delta_u_filt (list): Mean orbit differences per configuration [um].
-        delta_u_err (list): Orbit uncertainties per configuration [um].
-        theta_fit (dict): Theta projection fit result.
-        M_ivu_u_cfgs (list): IVU response vectors per configuration [um/urad].
+        spos_bpms (numpy.ndarray): BPM longitudinal positions [m].
+        delta_u_filt (numpy.ndarray): Filtered orbit difference [um].
+        theta_fit (dict): Projection fit result.
         plane (str): Transverse plane.
         cfg (int): Configuration index.
-        ref_cfg (int): Reference configuration. None plots absolute quantities.
-        normalized (bool): Whether to plot charge-normalized quantities.
 
     """
-
     row = config_table.iloc[cfg]
 
-    bpm_indices = data[cfg]["data"][0]["bpm_indcs"]
-    spos_cfg = spos_bpms[bpm_indices]
-
-    delta_cfg = delta_u_filt[cfg]
-    err_cfg = delta_u_err[cfg]
-
+    delta_u_cfg = delta_u_filt[cfg, :]  # [um]
+    model_cfg = theta_fit["model"][cfg, :]  # [um]
+    residual_cfg = theta_fit["residual"][cfg, :]  # [um]
     theta_cfg = theta_fit["theta"][cfg]  # [urad]
-    theta_err_cfg = theta_fit["theta_err"][cfg]  # [urad]
-
-    M = M_ivu_u_cfgs[cfg]  # [um/urad]
-
-    q_cfg = row["delta_charge"]  # [nC]
-
-    if ref_cfg is None:
-
-        if normalized:
-            delta_plot = delta_cfg / q_cfg
-            delta_err_plot = err_cfg / np.abs(q_cfg)
-
-            theta_plot = theta_cfg / q_cfg
-            theta_err_plot = theta_err_cfg / np.abs(q_cfg)
-
-            ylabel = r"orbit difference [$\mu$m/nC]"
-            theta_unit = r"$\mu$rad/nC"
-
-        else:
-            delta_plot = delta_cfg
-            delta_err_plot = err_cfg
-
-            theta_plot = theta_cfg
-            theta_err_plot = theta_err_cfg
-
-            ylabel = r"orbit difference [$\mu$m]"
-            theta_unit = r"$\mu$rad"
-
-        title_ref = ""
-
-    else:
-
-        row_ref = config_table.iloc[ref_cfg]
-
-        # ref_cfg contains all BPMs, so global BPM indices can be used directly.
-        delta_ref = delta_u_filt[ref_cfg][bpm_indices]
-        err_ref = delta_u_err[ref_cfg][bpm_indices]
-
-        theta_ref = theta_fit["theta"][ref_cfg]  # [urad]
-        theta_err_ref = theta_fit["theta_err"][ref_cfg]  # [urad]
-
-        q_ref = row_ref["delta_charge"]  # [nC]
-
-        if normalized:
-
-            delta_plot = (
-                delta_cfg / q_cfg
-                - delta_ref / q_ref
-            )  # [um/nC]
-
-            delta_err_plot = np.sqrt(
-                (err_cfg / q_cfg)**2
-                + (err_ref / q_ref)**2
-            )  # [um/nC]
-
-            theta_plot = (
-                theta_cfg / q_cfg
-                - theta_ref / q_ref
-            )  # [urad/nC]
-
-            theta_err_plot = np.sqrt(
-                (theta_err_cfg / q_cfg)**2
-                + (theta_err_ref / q_ref)**2
-            )  # [urad/nC]
-
-            ylabel = r"reference-subtracted orbit [$\mu$m/nC]"
-            theta_unit = r"$\mu$rad/nC"
-
-        else:
-
-            # Scale the reference to the charge of the plotted configuration.
-            charge_scale = q_cfg / q_ref
-
-            delta_plot = (
-                delta_cfg
-                - charge_scale * delta_ref
-            )  # [um]
-
-            delta_err_plot = np.sqrt(
-                err_cfg**2
-                + (charge_scale * err_ref)**2
-            )  # [um]
-
-            theta_plot = (
-                theta_cfg
-                - charge_scale * theta_ref
-            )  # [urad]
-
-            theta_err_plot = np.sqrt(
-                theta_err_cfg**2
-                + (charge_scale * theta_err_ref)**2
-            )  # [urad]
-
-            ylabel = r"reference-subtracted orbit [$\mu$m]"
-            theta_unit = r"$\mu$rad"
-
-        title_ref = (
-        rf"$y_{{0,\rm ref}}$={row_ref['y0']:.2f} mm"
-    )
-
-    # Orbit predicted by the fitted theta.
-    model_plot = theta_plot * M
-    residual_plot = delta_plot - model_plot
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    ax.errorbar(
-        spos_cfg,
-        delta_plot,
-        yerr=delta_err_plot,
-        marker=".",
-        linestyle="none",
-        capsize=2,
+    ax.plot(
+        spos_bpms,
+        delta_u_cfg,
+        ".",
         alpha=0.5,
-        label="exp. data",
+        label="filtered data",
     )
 
     ax.plot(
-        spos_cfg,
-        model_plot,
+        spos_bpms,
+        model_cfg,
         "-",
-        alpha=0.9,
-        label=(
-            rf"model: $\theta M_{{\rm IVU}}$ |  "
-            rf"$\theta={theta_plot:.3f}\pm{theta_err_plot:.3f}$ "
-            rf"{theta_unit}"
-        ),
-    )
-
-    ax.axhline(0, color='black', linestyle='--', linewidth=1.3)
-
-    # ax.plot(
-    #     spos_cfg,
-    #     residual_plot,
-    #     ".-",
-    #     alpha=0.3,
-    #     label="residual",
-    # )
-
-    ax.set_title(
-        rf"$\Delta {plane}$ orbit deviation "
-        rf"(gap={row['gap']:.1f} mm, "
-        rf"$\Delta q$={q_cfg:.2f} nC, "
-        rf"$y_0$={row['y0']:.2f} mm, {title_ref})"
-    )
-
-    ax.set_xlabel("spos [m]")
-    ax.set_ylabel(ylabel)
-    ax.grid(True)
-    ax.legend()
-
-    plt.show()
-
-
-def plot_ivu_projection(
-    data,
-    config_table,
-    spos_bpms,
-    delta_u_filt,
-    delta_u_err,
-    M_ivu_u_cfgs,
-    kperp_fit,
-    cfg,
-    ref_cfg,
-    plane="y",
-    normalized=False,
-):
-    """Plot reference-subtracted IVU orbit and model from the kperp fit.
-
-    Args:
-        data (list): List of measurement dictionaries.
-        config_table (pandas.DataFrame): Configuration table.
-        spos_bpms (numpy.ndarray): Full BPM longitudinal positions [m].
-        delta_u_filt (list): Mean orbit differences per configuration [um].
-        delta_u_err (list): Orbit uncertainties per configuration [um].
-        M_ivu_u_cfgs (list): IVU response vectors per configuration [um/urad].
-        kperp_fit (dict): Kick-factor fit result.
-        cfg (int): Configuration index.
-        ref_cfg (int): Reference configuration index.
-        plane (str): Transverse plane.
-        normalized (bool): Whether to plot charge-normalized quantities.
-
-    """
-
-    row = config_table.iloc[cfg]
-    row_ref = config_table.iloc[ref_cfg]
-
-    bpm_indices = data[cfg]["data"][0]["bpm_indcs"]
-    spos_cfg = spos_bpms[bpm_indices]
-
-    # ref_cfg contains all BPMs.
-    delta_cfg = delta_u_filt[cfg]
-    delta_ref = delta_u_filt[ref_cfg][bpm_indices]
-
-    err_cfg = delta_u_err[cfg]
-    err_ref = delta_u_err[ref_cfg][bpm_indices]
-
-    M = M_ivu_u_cfgs[cfg]  # [um/urad]
-
-    q_cfg = row["delta_charge"]  # [nC]
-    q_ref = row_ref["delta_charge"]  # [nC]
-
-    y0_cfg = row["y0"] 
-    y0_ref = row_ref["y0"] 
-    delta_y0 = y0_cfg - y0_ref  
-
-    # Global slope extracted from theta/dq vs y0.
-    a = kperp_fit["a"]  # [urad/(nC mm)]
-    a_err = kperp_fit["a_err"]  # [urad/(nC mm)]
-
-    if normalized:
-
-        # Reference-subtracted experimental orbit per unit charge.
-        delta_ivu = (
-            delta_cfg / q_cfg
-            - delta_ref / q_ref
-        )  # [um/nC]
-
-        delta_ivu_err = np.sqrt(
-            (err_cfg / q_cfg)**2
-            + (err_ref / q_ref)**2
-        )  # [um/nC]
-
-        # IVU kick predicted by the global slope.
-        theta_ivu = a * delta_y0  # [urad/nC]
-        theta_ivu_err = np.abs(delta_y0) * a_err  # [urad/nC]
-
-        model_ivu = theta_ivu * M  # [um/nC]
-
-        ylabel = r"Orbit difference [$\mu$m/nC]"
-        theta_unit = r"$\mu$rad/nC"
-
-    else:
-
-        # Scale reference orbit to the charge of cfg before subtraction.
-        charge_scale = q_cfg / q_ref
-
-        delta_ivu = (
-            delta_cfg
-            - charge_scale * delta_ref
-        )  # [um]
-
-        delta_ivu_err = np.sqrt(
-            err_cfg**2
-            + (charge_scale * err_ref)**2
-        )  # [um]
-
-        # Same slope prediction expressed at the charge of cfg.
-        theta_ivu = q_cfg * a * delta_y0  # [urad]
-        theta_ivu_err = np.abs(q_cfg * delta_y0) * a_err  # [urad]
-
-        model_ivu = theta_ivu * M  # [um]
-
-        ylabel = r"Orbit difference [$\mu$m]"
-        theta_unit = r"$\mu$rad"
-
-    residual_ivu = delta_ivu - model_ivu
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-
-    ax.errorbar(
-        spos_cfg,
-        delta_ivu,
-        yerr=delta_ivu_err,
-        marker=".",
-        linestyle="none",
-        capsize=2,
-        alpha=0.6,
-        label="reference-subtracted exp. data",
+        alpha=0.8,
+        label=rf"$\hat{{\theta}}M_{{\rm IVU}}$, $\hat{{\theta}}={theta_cfg:.3f}$ urad",
     )
 
     ax.plot(
-        spos_cfg,
-        model_ivu,
-        "-",
-        alpha=0.9,
-        label=(
-            rf"model: $\theta_{{\rm IVU}}M_{{\rm IVU}}$ | "
-            rf"$\theta_{{\rm IVU}}="
-            rf"{theta_ivu:.3f}\pm{theta_ivu_err:.3f}$ "
-            rf"{theta_unit}"
-        ),
+        spos_bpms,
+        residual_cfg,
+        ".-",
+        alpha=0.4,
+        label="residual",
     )
-
-    ax.axhline(0, color='black', linestyle='--', linewidth=1.3)
-
-    # ax.plot(
-    #     spos_cfg,
-    #     residual_ivu,
-    #     ".-",
-    #     alpha=0.4,
-    #     label="residual",
-    # )
 
     ax.set_title(
-        rf"IVU orbit distortion "
+        rf"$\Delta {plane}$ projection, cfg={cfg} "
         rf"(gap={row['gap']:.1f} mm, "
-        rf"$y_0$={y0_cfg:.2f} mm, "
-        rf"$y_{{0,\rm ref}}$={y0_ref:.2f} mm)"
+        rf"$\Delta q$={row['delta_charge']:.2f} nC, "
+        rf"$y_0$={row['y0']:.2f} mm, "
+        rf"{row['parity']})"
     )
-
     ax.set_xlabel("spos [m]")
-    ax.set_ylabel(ylabel)
+    ax.set_ylabel(r"orbit difference [$\mu$m]")
     ax.grid(True)
     ax.legend()
-
     plt.show()
 
 
 def plot_theta_values(config_table, theta_fit, gaps="all", plane="y", normalized=False):
-    """Plot projected theta values versus y0 with error bars.
+    """Plot projected theta values versus y0.
 
     Args:
         config_table (pandas.DataFrame): Configuration table.
@@ -1550,8 +1012,7 @@ def plot_theta_values(config_table, theta_fit, gaps="all", plane="y", normalized
         normalized (bool): Whether to plot theta/delta_q.
 
     """
-    theta = theta_fit["theta"]          # [urad]
-    theta_err = theta_fit["theta_err"]  # [urad]
+    theta = theta_fit["theta"]  # [urad]
 
     y0 = config_table["y0"].to_numpy()  # [mm]
     delta_q_meas = config_table["delta_charge"].to_numpy()  # [nC]
@@ -1586,18 +1047,16 @@ def plot_theta_values(config_table, theta_fit, gaps="all", plane="y", normalized
             group_nC = np.mean(delta_q_group_nC[mask])  # [nC]
 
             if normalized:
-                y_plot = theta[mask] / delta_q_meas[mask]
-                y_err = theta_err[mask] / np.abs(delta_q_meas[mask])
+                y_plot = theta[mask] / delta_q_meas[mask]  # [urad/nC]
             else:
-                y_plot = theta[mask]
-                y_err = theta_err[mask]
+                y_plot = theta[mask]  # [urad]
 
-            ax.errorbar(
+            ax.plot(
                 y0[mask],
                 y_plot,
-                yerr=y_err,
-                fmt="o",
-                capsize=4,
+                marker="o",
+                linewidth=1,
+                markersize=5,
                 label=(
                     rf"$gap$ = {gap:.1f} mm | "
                     rf"$\Delta q_{{\rm group}}$ = {group_nC:.1f} nC"
@@ -1668,13 +1127,7 @@ def select_configs(config_table, gap, delta_q_groups_nC=None, delta_q_group_step
     return cfg_idx
 
 
-def fit_theta_over_dq_vs_y0(
-    y0,
-    delta_q_meas,
-    delta_q_group,
-    theta,
-    theta_err,
-):
+def fit_theta_over_dq_vs_y0(y0, delta_q_meas, delta_q_group, theta):
     """Fit theta/delta_q_meas = offset(delta_q_group) + a*y0.
 
     Args:
@@ -1682,107 +1135,51 @@ def fit_theta_over_dq_vs_y0(
         delta_q_meas (numpy.ndarray): Measured bunch charge differences [nC].
         delta_q_group (numpy.ndarray): Integer charge groups.
         theta (numpy.ndarray): Projected kick angles [urad].
-        theta_err (numpy.ndarray): Uncertainty of projected kick angles [urad].
 
     Returns:
-        fit (dict): Weighted fit result.
+        fit (dict): Fit result.
 
     """
-
     theta_over_dq = theta / delta_q_meas  # [urad/nC]
-
-    # Propagate theta uncertainty to theta/dq, neglecting dq uncertainty.
-    theta_over_dq_err = (
-        theta_err / np.abs(delta_q_meas)
-    )  # [urad/nC]
 
     groups = np.sort(np.unique(delta_q_group))
     n_groups = len(groups)
 
-    # Design matrix for:
-    # theta/dq = offset(group) + a*y0
-    #
-    # One column per charge-group offset, plus one last column for y0.
-    # Shape: (n_measurements, n_groups + 1)
-    X = np.zeros((len(theta_over_dq), n_groups + 1))
+    X = np.zeros((len(theta_over_dq), n_groups + 1))  # []
 
-    # Select which offset applies to each measurement:
-    # rows belonging to group i get a 1 in column i.
     for i, group in enumerate(groups):
         mask = delta_q_group == group
         X[mask, i] = 1.0
 
-    # Last column multiplies the common slope a.
     X[:, -1] = y0  # [mm]
 
-    # Weighted least squares:
-    # minimizing sum[(y_i - y_fit_i)^2 / sigma_i^2]
-    weights = 1 / theta_over_dq_err**2
-    sqrt_weights = np.sqrt(weights)
+    coeffs, _, _, _ = np.linalg.lstsq(X, theta_over_dq, rcond=None)
 
-    # Multiplying each row by sqrt(weight) converts the weighted problem
-    # into a standard least-squares problem.
-    X_weighted = X * sqrt_weights[:, None]
-    y_weighted = theta_over_dq * sqrt_weights
-
-    # Solve X_weighted @ coeffs ~= y_weighted.
-    # Shapes:
-    #   X_weighted : (n_measurements, n_parameters)
-    #   y_weighted : (n_measurements,)
-    #   coeffs     : (n_parameters,)
-    coeffs, _, _, _ = np.linalg.lstsq(
-        X_weighted,
-        y_weighted,
-        rcond=None,
-    )
-
-    # coeffs = [offset_group1, offset_group2, ..., a]
     offsets = coeffs[:-1]  # [urad/nC]
     a = coeffs[-1]  # [urad/(nC mm)]
 
-    # Evaluate the fitted model at the original measurement points.
-    theta_over_dq_fit = X @ coeffs
-    residual = theta_over_dq - theta_over_dq_fit
+    theta_over_dq_fit = X @ coeffs  # [urad/nC]
+    residual = theta_over_dq - theta_over_dq_fit  # [urad/nC]
 
-    # Number of measurements left after fitting all model parameters.
-    dof = len(theta_over_dq) - len(coeffs)
-
-    # Parameter covariance for weighted least squares:
-    # cov = (X^T W X)^(-1).
-    # pinv is used instead of inv for better numerical robustness.
-    cov = np.linalg.pinv(
-        X_weighted.T @ X_weighted
-    )
-
-    # Diagonal of cov contains parameter variances.
-    coeffs_err = np.sqrt(np.diag(cov))
-
-    offsets_err = coeffs_err[:-1]
-    a_err = coeffs_err[-1]
-
-    # Chi-square compares residuals with the expected measurement errors.
-    chi2 = np.sum(
-        (residual / theta_over_dq_err)**2
-    )
+    dof = len(theta_over_dq) - len(coeffs)  # []
 
     if dof > 0:
-        reduced_chi2 = chi2 / dof
+        residual_var = np.sum(residual**2) / dof  # [(urad/nC)^2]
+        cov = residual_var * np.linalg.pinv(X.T @ X)  # []
+        coeffs_err = np.sqrt(np.diag(cov))  # []
     else:
-        reduced_chi2 = np.nan
+        coeffs_err = np.full_like(coeffs, np.nan)  # []
 
     fit = {
         "theta_over_dq": theta_over_dq,
-        "theta_over_dq_err": theta_over_dq_err,
         "theta_over_dq_fit": theta_over_dq_fit,
         "residual": residual,
         "groups": groups,
         "offsets": offsets,
-        "offsets_err": offsets_err,
+        "offsets_err": coeffs_err[:-1],
         "a": a,
-        "a_err": a_err,
+        "a_err": coeffs_err[-1],
         "dof": dof,
-        "chi2": chi2,
-        "reduced_chi2": reduced_chi2,
     }
 
     return fit
@@ -1823,7 +1220,6 @@ def fit_kperp_from_theta(
         raise ValueError("No configurations selected for this gap/charge group.")
 
     theta = theta_fit["theta"][cfg_idx]  # [urad]
-    theta_err = theta_fit["theta_err"][cfg_idx]  # [µrad]
 
     y0 = config_table.iloc[cfg_idx]["y0"].to_numpy()  # [mm]
     delta_q_meas = config_table.iloc[cfg_idx]["delta_charge"].to_numpy()  # [nC]
@@ -1834,7 +1230,6 @@ def fit_kperp_from_theta(
         delta_q_meas=delta_q_meas,
         delta_q_group=delta_q_group,
         theta=theta,
-        theta_err=theta_err,
     )
 
     a = line_fit["a"]  # [urad/(nC mm)]
@@ -1847,33 +1242,21 @@ def fit_kperp_from_theta(
         "gap": gap,
         "plane": plane,
         "cfg_idx": cfg_idx,
-
         "theta": theta,
-        "theta_err": theta_err,
-
         "delta_q_meas": delta_q_meas,
         "delta_q_group": delta_q_group,
         "y0": y0,
-
         "theta_over_dq": line_fit["theta_over_dq"],
-        "theta_over_dq_err": line_fit["theta_over_dq_err"],
         "theta_over_dq_fit": line_fit["theta_over_dq_fit"],
-
         "groups": line_fit["groups"],
         "offsets": line_fit["offsets"],
         "offsets_err": line_fit["offsets_err"],
-
         "a": a,
         "a_err": a_err,
-
         "kperp": kperp,
         "kperp_err": kperp_err,
-
         "residual": line_fit["residual"],
         "dof": line_fit["dof"],
-        "chi2": line_fit["chi2"],
-        "reduced_chi2": line_fit["reduced_chi2"],
-
         "delta_q_group_step_nC": delta_q_group_step_nC,
     }
 
@@ -1893,7 +1276,6 @@ def plot_theta_and_fit(kperp_fit, normalized=True):
 
     y0 = kperp_fit["y0"]  # [mm]
     theta = kperp_fit["theta"]  # [urad]
-    theta_err = kperp_fit["theta_err"]  # [urad]
     delta_q_meas = kperp_fit["delta_q_meas"]  # [nC]
     delta_q_group = kperp_fit["delta_q_group"]  # []
 
@@ -1910,10 +1292,6 @@ def plot_theta_and_fit(kperp_fit, normalized=True):
 
         if normalized:
             y_plot = theta[mask] / delta_q_meas[mask]  # [urad/nC]
-            y_err = (
-                theta_err[mask]
-                / np.abs(delta_q_meas[mask])
-            )
 
             y0_fit = np.linspace(
                 np.min(y0[mask]),
@@ -1928,7 +1306,6 @@ def plot_theta_and_fit(kperp_fit, normalized=True):
 
         else:
             y_plot = theta[mask]  # [urad]
-            y_err = theta_err[mask]  # [µrad]
 
             order = np.argsort(y0[mask])
             y0_fit = y0[mask][order]  # [mm]
@@ -1941,13 +1318,10 @@ def plot_theta_and_fit(kperp_fit, normalized=True):
             ylabel = r"$\hat{\theta}$ [$\mu$rad]"
             title_start = rf"$\hat{{\theta}}^{plane}$"
 
-        ax.errorbar(
+        ax.plot(
             y0[mask],
             y_plot,
-            yerr=y_err,
-            fmt="o",
-            markersize=5.5,
-            capsize=4,
+            "o",
             label=rf"$\Delta q_{{\rm group}}$ = {group_nC:.1f} nC",
         )
 
@@ -1980,6 +1354,7 @@ def print_kperp_summary(kperp_fit):
     print(f"plane     : {kperp_fit['plane']}")
     print(f"gap       : {kperp_fit['gap']:.1f} mm")
     print(f"n configs : {len(kperp_fit['cfg_idx'])}")
+    print(f"dof       : {kperp_fit['dof']}")
     print("")
     print(
         f"a         : {kperp_fit['a']:.3e} +/- "
@@ -1988,9 +1363,6 @@ def print_kperp_summary(kperp_fit):
     print(
         f"kperp     : {kperp_fit['kperp']:.3f} +/- "
         f"{kperp_fit['kperp_err']:.3f} [V/(pC m)]"
-    )
-    print(
-        f"chi2/dof  : {kperp_fit['reduced_chi2']:.3f}"
     )
 
 
